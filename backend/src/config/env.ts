@@ -9,6 +9,7 @@ export const env = {
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  paymentSandboxEnabled: process.env.PAYMENT_SANDBOX_ENABLED === "true",
   paymongoSecretKey: process.env.PAYMONGO_SECRET_KEY,
   paymongoWebhookSecret: process.env.PAYMONGO_WEBHOOK_SECRET,
   resendApiKey: process.env.RESEND_API_KEY,

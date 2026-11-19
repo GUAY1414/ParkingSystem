@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, LoaderCircle, RotateCcw } from "lucide-react";
+import { Camera, RotateCcw } from "lucide-react";
 
 export default function CameraPlateScanner({ onPlateConfirmed }: { onPlateConfirmed: (plate: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);

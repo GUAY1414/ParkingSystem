@@ -22,7 +22,7 @@ type ParkingLocation = {
   parking_zones: Array<{ id: string; name: string; capacity: number; occupancy: number }>;
 };
 
-export default function ParkingMap() {
+export default function ParkingMap({ onSelectLocation }: { onSelectLocation?: (location: ParkingLocation) => void }) {
   const [locations, setLocations] = useState<ParkingLocation[]>([]);
 
   useEffect(() => {
@@ -50,6 +50,7 @@ export default function ParkingMap() {
           key={location.id}
           position={[Number(location.latitude), Number(location.longitude)]}
           icon={icon}
+          eventHandlers={{ click: () => onSelectLocation?.(location) }}
         >
           <Popup>
             <strong>{location.name}</strong><br />

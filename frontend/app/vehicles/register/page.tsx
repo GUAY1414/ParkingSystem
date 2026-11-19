@@ -8,8 +8,7 @@ import { supabase } from "../../../lib/supabase";
 
 export default function RegisterVehiclePage() {
   const [plate, setPlate] = useState("");
-  const [make, setMake] = useState("");
-  const [model, setModel] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
   const [color, setColor] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -18,6 +17,21 @@ export default function RegisterVehiclePage() {
   async function saveVehicle(value: string) {
     setPlate(value);
     setError("");
+
+    if (!vehicleType) {
+      setError("Select a vehicle type.");
+      return;
+    }
+    if (!color) {
+      setError("Select a vehicle color.");
+      return;
+    }
+
+    const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!/^([A-Z]{2,3}[0-9]{3,4}|[0-9]{3}[A-Z]{3})$/.test(normalized)) {
+      setError("Enter a valid Philippine plate number, for example ABC1234.");
+      return;
+    }
 
     if (!supabase) {
       setError("Supabase configuration is missing.");
@@ -49,7 +63,7 @@ export default function RegisterVehiclePage() {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/vehicles`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plateNumber: value, make, model, color }),
+      body: JSON.stringify({ plateNumber: normalized, vehicleType, color }),
     });
     const body = await response.json();
     setSaving(false);
@@ -75,10 +89,19 @@ export default function RegisterVehiclePage() {
           </section>
         ) : (
           <section>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
-              {[['Make', make, setMake], ['Model', model, setModel], ['Color', color, setColor]].map(([label, value, setter]) => (
-                <label key={String(label)} style={{ fontSize: 12, fontWeight: 800 }}>{String(label)}<input value={String(value)} onChange={(event) => (setter as (value: string) => void)(event.target.value)} style={{ width: "100%", height: 44, border: "1px solid #dde5ed", borderRadius: 9, padding: "0 10px", marginTop: 6, fontWeight: 400 }} /></label>
-              ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 12 }}>
+              <label style={{ fontSize: 12, fontWeight: 800 }}>Vehicle type
+                <select required value={vehicleType} onChange={(event) => setVehicleType(event.target.value)} style={{ width: "100%", height: 44, border: "1px solid #dde5ed", borderRadius: 9, padding: "0 10px", marginTop: 6 }}>
+                  <option value="">Select vehicle type</option>
+                  <option>Motorcycle</option><option>Sedan</option><option>SUV</option><option>Van</option><option>Pickup Truck</option>
+                </select>
+              </label>
+              <label style={{ fontSize: 12, fontWeight: 800 }}>Vehicle color
+                <select required value={color} onChange={(event) => setColor(event.target.value)} style={{ width: "100%", height: 44, border: "1px solid #dde5ed", borderRadius: 9, padding: "0 10px", marginTop: 6 }}>
+                  <option value="">Select vehicle color</option>
+                  <option>Black</option><option>White</option><option>Gray</option><option>Silver</option><option>Red</option><option>Blue</option><option>Green</option><option>Yellow</option><option>Orange</option><option>Brown</option>
+                </select>
+              </label>
             </div>
             {error && <p role="alert" style={{ color: "#b42318", background: "#fff1f0", borderRadius: 8, padding: 10, fontSize: 12 }}>{error}</p>}
             <CameraPlateScanner onPlateConfirmed={saveVehicle} />

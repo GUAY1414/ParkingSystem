@@ -9,9 +9,8 @@ const router = Router();
 
 const vehicleSchema = z.object({
   plateNumber: z.string().trim().min(3).max(20),
-  make: z.string().trim().max(50).optional(),
-  model: z.string().trim().max(50).optional(),
-  color: z.string().trim().max(30).optional(),
+  vehicleType: z.enum(["Motorcycle", "Sedan", "SUV", "Van", "Pickup Truck"]),
+  color: z.enum(["Black", "White", "Gray", "Silver", "Red", "Blue", "Green", "Yellow", "Orange", "Brown"]),
 });
 
 router.post("/", requireAuth, requireRole("DRIVER"), async (req, res) => {
@@ -19,7 +18,9 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res) => {
   if (!parsed.success) return failure(res, "VALIDATION_ERROR", "Invalid vehicle information", 422);
 
   const normalizedPlate = normalizePlate(parsed.data.plateNumber);
-  if (normalizedPlate.length < 3) return failure(res, "VALIDATION_ERROR", "Enter a valid plate number", 422);
+  if (!/^([A-Z]{2,3}[0-9]{3,4}|[0-9]{3}[A-Z]{3})$/.test(normalizedPlate)) {
+    return failure(res, "VALIDATION_ERROR", "Enter a valid Philippine plate number", 422);
+  }
 
   try {
     const accessToken = req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "";
@@ -28,8 +29,8 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res) => {
       owner_id: req.auth!.userId,
       plate_number: parsed.data.plateNumber.toUpperCase(),
       normalized_plate: normalizedPlate,
-      make: parsed.data.make,
-      model: parsed.data.model,
+      make: parsed.data.vehicleType,
+      model: null,
       color: parsed.data.color,
     }).select().single();
 

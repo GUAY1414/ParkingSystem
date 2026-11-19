@@ -38,11 +38,11 @@ export default function Home() {
 					</span>
 				</Link>
 				<div className="nav-actions">
-					<Link href="/dashboard" className="nav-link">
-						View dashboard
+					<Link href="/register" className="secondary-button">
+						Register
 					</Link>
 					<Link href="/login" className="primary-button">
-						Sign in <ArrowRight size={16} />
+						Log In <ArrowRight size={16} />
 					</Link>
 				</div>
 			</nav>
@@ -62,18 +62,11 @@ export default function Home() {
 						administrators across Manila.
 					</p>
 					<div className="hero-actions">
-						<Link
-							href="/dashboard"
-							className="primary-button large"
-						>
-							Open dashboard{" "}
-							<ArrowRight size={18} />
+						<Link href="/register" className="primary-button large">
+							Register <ArrowRight size={18} />
 						</Link>
-						<Link
-							href="/map"
-							className="secondary-button large"
-						>
-							<MapPin size={18} /> Explore map
+						<Link href="/login" className="secondary-button large">
+							Log In
 						</Link>
 					</div>
 					<div className="trust-row">

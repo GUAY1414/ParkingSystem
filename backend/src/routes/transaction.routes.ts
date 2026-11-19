@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../middleware/auth";
-import { getServiceSupabase } from "../config/supabase";
+import { getUserSupabase } from "../config/supabase";
 import { randomReference } from "../utils/plate";
 import { failure, success } from "../utils/response";
 
@@ -12,7 +12,8 @@ router.post("/cash", requireAuth, requireRole("PARKING_ATTENDANT"), async (req, 
   if (!parsed.success) return failure(res, "VALIDATION_ERROR", "Invalid cash payment information", 422);
 
   try {
-    const supabase = getServiceSupabase();
+    const accessToken = req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "";
+    const supabase = getUserSupabase(accessToken);
     const { data: session, error: sessionError } = await supabase
       .from("parking_sessions")
       .select("id,status,snapshot_rate_centavos,zone_id")
@@ -56,6 +57,41 @@ router.post("/cash", requireAuth, requireRole("PARKING_ATTENDANT"), async (req, 
   } catch (error) {
     console.error(error);
     return failure(res, "SERVER_ERROR", "Could not record cash payment", 500);
+  }
+});
+
+router.get("/receipts/me", requireAuth, requireRole("DRIVER"), async (req, res) => {
+  try {
+    const accessToken = req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "";
+    const supabase = getUserSupabase(accessToken);
+
+    const { data: ownedVehicles } = await supabase
+      .from("vehicles")
+      .select("id")
+      .eq("owner_id", req.auth!.userId);
+
+    const vehicleIds = (ownedVehicles ?? []).map((vehicle) => vehicle.id);
+    if (!vehicleIds.length) return success(res, []);
+
+    const { data: sessions } = await supabase
+      .from("parking_sessions")
+      .select("id,vehicle_id")
+      .in("vehicle_id", vehicleIds);
+
+    const sessionIds = (sessions ?? []).map((session) => session.id);
+    if (!sessionIds.length) return success(res, []);
+
+    const { data, error } = await supabase
+      .from("receipts")
+      .select("id,receipt_number,issued_at,session_id,transaction_id")
+      .in("session_id", sessionIds)
+      .order("issued_at", { ascending: false });
+
+    if (error) throw error;
+    return success(res, data ?? []);
+  } catch (error) {
+    console.error(error);
+    return failure(res, "SERVER_ERROR", "Could not retrieve receipts", 500);
   }
 });
 

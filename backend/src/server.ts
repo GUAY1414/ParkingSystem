@@ -8,6 +8,10 @@ import authRoutes from "./routes/auth.routes";
 import vehicleRoutes from "./routes/vehicle.routes";
 import parkingRoutes from "./routes/parking.routes";
 import transactionRoutes from "./routes/transaction.routes";
+import qrRoutes from "./routes/qr.routes";
+import paymentRoutes from "./routes/payment.routes";
+import notificationRoutes from "./routes/notification.routes";
+import roleRoutes from "./routes/role.routes";
 
 const app = express();
 
@@ -25,6 +29,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/parking", parkingRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/qr", qrRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/roles", roleRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({
