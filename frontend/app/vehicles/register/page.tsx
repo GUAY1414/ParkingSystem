@@ -10,6 +10,7 @@ export default function RegisterVehiclePage() {
   const [plate, setPlate] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [color, setColor] = useState("");
+  const [customColor, setCustomColor] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -22,7 +23,8 @@ export default function RegisterVehiclePage() {
       setError("Select a vehicle type.");
       return;
     }
-    if (!color) {
+    const finalColor = color === "Other" ? customColor.trim() : color;
+    if (!finalColor) {
       setError("Select a vehicle color.");
       return;
     }
@@ -63,7 +65,7 @@ export default function RegisterVehiclePage() {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api"}/vehicles`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plateNumber: normalized, vehicleType, color }),
+      body: JSON.stringify({ plateNumber: normalized, vehicleType, color: finalColor }),
     });
     const body = await response.json();
     setSaving(false);
@@ -99,8 +101,11 @@ export default function RegisterVehiclePage() {
               <label style={{ fontSize: 12, fontWeight: 800 }}>Vehicle color
                 <select required value={color} onChange={(event) => setColor(event.target.value)} style={{ width: "100%", height: 44, border: "1px solid #dde5ed", borderRadius: 9, padding: "0 10px", marginTop: 6 }}>
                   <option value="">Select vehicle color</option>
-                  <option>Black</option><option>White</option><option>Gray</option><option>Silver</option><option>Red</option><option>Blue</option><option>Green</option><option>Yellow</option><option>Orange</option><option>Brown</option>
+                  <option>Black</option><option>White</option><option>Gray</option><option>Silver</option><option>Red</option><option>Blue</option><option>Green</option><option>Yellow</option><option>Orange</option><option>Brown</option><option value="Other">Other</option>
                 </select>
+                {color === "Other" && (
+                  <input value={customColor} onChange={(event) => setCustomColor(event.target.value)} placeholder="Enter vehicle color" style={{ width: "100%", height: 44, border: "1px solid #dde5ed", borderRadius: 9, padding: "0 10px", marginTop: 8 }} />
+                )}
               </label>
             </div>
             {error && <p role="alert" style={{ color: "#b42318", background: "#fff1f0", borderRadius: 8, padding: 10, fontSize: 12 }}>{error}</p>}

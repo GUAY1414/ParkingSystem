@@ -19,6 +19,86 @@ router.get("/locations", requireAuth, async (_req, res) => {
 });
 
 const sessionSchema = z.object({ vehicleId: z.string().uuid(), zoneId: z.string().uuid() });
+const plateSessionSchema = z.object({ plateNumber: z.string().trim().min(3).max(20), zoneId: z.string().uuid() });
+
+router.post("/sessions/by-plate", requireAuth, requireRole("PARKING_ATTENDANT"), async (req, res) => {
+  const parsed = plateSessionSchema.safeParse(req.body);
+  if (!parsed.success) return failure(res, "VALIDATION_ERROR", "Invalid plate or zone", 422);
+
+  try {
+    const supabase = getServiceSupabase();
+    const normalizedPlate = parsed.data.plateNumber.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const { data: vehicle, error: vehicleError } = await supabase
+      .from("vehicles")
+      .select("id,owner_id,plate_number,make,color,status")
+      .eq("normalized_plate", normalizedPlate)
+      .maybeSingle();
+    if (vehicleError) throw vehicleError;
+    if (!vehicle) return failure(res, "VEHICLE_NOT_FOUND", "No registered vehicle found for this plate", 404);
+
+    const { data: active } = await supabase
+      .from("parking_sessions")
+      .select("id")
+      .eq("vehicle_id", vehicle.id)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    if (active) return failure(res, "ACTIVE_SESSION_EXISTS", "This vehicle already has an active session", 409);
+
+    const { data: zone } = await supabase
+      .from("parking_zones")
+      .select("id,capacity,occupancy,status")
+      .eq("id", parsed.data.zoneId)
+      .single();
+    if (!zone || zone.status !== "ACTIVE") return failure(res, "NOT_FOUND", "Parking zone is unavailable", 404);
+    if (zone.occupancy >= zone.capacity) return failure(res, "ZONE_FULL", "This parking zone is full", 409);
+
+    const { data: rate } = await supabase
+      .from("parking_rates")
+      .select("amount_centavos")
+      .eq("zone_id", parsed.data.zoneId)
+      .eq("status", "ACTIVE")
+      .order("effective_from", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!rate) return failure(res, "RATE_NOT_CONFIGURED", "This zone has no active fixed rate", 422);
+
+    const qrReference = randomReference("KMP");
+    const { data: session, error } = await supabase
+      .from("parking_sessions")
+      .insert({
+        vehicle_id: vehicle.id,
+        zone_id: parsed.data.zoneId,
+        attendant_id: req.auth!.userId,
+        snapshot_rate_centavos: rate.amount_centavos,
+        qr_reference: qrReference,
+        status: "ACTIVE",
+      })
+      .select("*, vehicles(owner_id,plate_number,make,color), parking_zones(name, parking_locations(name,address))")
+      .single();
+    if (error) throw error;
+
+    await supabase.from("parking_zones").update({ occupancy: zone.occupancy + 1, updated_at: new Date().toISOString() }).eq("id", zone.id);
+    await supabase.from("notifications").insert({
+      profile_id: vehicle.owner_id,
+      session_id: session.id,
+      type: "PARKING_SESSION_STARTED",
+      message: `Parking session started for ${vehicle.plate_number}.`,
+      status: "UNREAD",
+    });
+    await supabase.from("audit_logs").insert({
+      actor_id: req.auth!.userId,
+      action: "PARKING_SESSION_CREATED",
+      entity_type: "parking_sessions",
+      entity_id: session.id,
+      metadata: { zoneId: parsed.data.zoneId, qrReference, plateNumber: vehicle.plate_number },
+    });
+
+    return success(res, session, 201);
+  } catch (error) {
+    console.error(error);
+    return failure(res, "SERVER_ERROR", "Could not start parking session", 500);
+  }
+});
 
 router.post("/sessions", requireAuth, requireRole("PARKING_ATTENDANT"), async (req, res) => {
   const parsed = sessionSchema.safeParse(req.body);

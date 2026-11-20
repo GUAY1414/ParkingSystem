@@ -14,10 +14,23 @@ type Location = { id: string; name: string; address: string; latitude: number; l
 export default function MapPage() {
   const [selected, setSelected] = useState<Location | null>(null);
   const [rates, setRates] = useState<Record<string, number>>({});
+  const [backHref, setBackHref] = useState("/dashboard");
 
   useEffect(() => {
     async function loadMapData() {
       if (!supabase) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (userId) {
+        const { data: profile } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+        const roleBackHref: Record<string, string> = {
+          DRIVER: "/driver",
+          PARKING_ATTENDANT: "/attendant",
+          PARKING_ADMINISTRATOR: "/parking-admin",
+          SYSTEM_ADMINISTRATOR: "/system-admin",
+        };
+        setBackHref(profile?.role ? roleBackHref[profile.role] ?? "/dashboard" : "/dashboard");
+      }
       const { data } = await supabase
         .from("parking_locations")
         .select("id,name,address,latitude,longitude,parking_zones(id,name,capacity,occupancy,status)")
@@ -46,7 +59,7 @@ export default function MapPage() {
   return (
     <main style={{ minHeight: "100vh", background: "#f4f7fa" }}>
       <header style={{ height: 68, background: "white", borderBottom: "1px solid #e7edf4", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800 }}><ArrowLeft size={17} /> Kuya meron pa?</Link>
+        <Link href={backHref} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800 }}><ArrowLeft size={17} /> Back to workspace</Link>
         <button className="secondary-button" type="button"><LocateFixed size={16} /> Use my location</button>
       </header>
       <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", minHeight: "calc(100vh - 68px)" }}>

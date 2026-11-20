@@ -10,7 +10,7 @@ const router = Router();
 const vehicleSchema = z.object({
   plateNumber: z.string().trim().min(3).max(20),
   vehicleType: z.enum(["Motorcycle", "Sedan", "SUV", "Van", "Pickup Truck"]),
-  color: z.enum(["Black", "White", "Gray", "Silver", "Red", "Blue", "Green", "Yellow", "Orange", "Brown"]),
+  color: z.string().trim().min(1).max(30),
 });
 
 router.post("/", requireAuth, requireRole("DRIVER"), async (req, res) => {
@@ -30,7 +30,6 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res) => {
       plate_number: parsed.data.plateNumber.toUpperCase(),
       normalized_plate: normalizedPlate,
       make: parsed.data.vehicleType,
-      model: null,
       color: parsed.data.color,
     }).select().single();
 

@@ -11,7 +11,7 @@ router.get("/session/:reference", requireAuth, requireRole("PARKING_ATTENDANT", 
 
   const { data, error } = await supabase
     .from("parking_sessions")
-    .select("id,qr_reference,status,start_time,end_time,snapshot_rate_centavos,vehicles(plate_number,make,model,color),parking_zones(name,parking_locations(name,address))")
+    .select("id,qr_reference,status,start_time,end_time,snapshot_rate_centavos,vehicles(plate_number,make,color),parking_zones(name,parking_locations(name,address))")
     .eq("qr_reference", req.params.reference)
     .maybeSingle();
 

@@ -12,7 +12,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   if (!token) return failure(res, "UNAUTHORIZED", "Authentication required", 401);
 
   const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    auth: { persistSession: false },
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
   });
 
   const { data, error } = await supabase.auth.getUser(token);

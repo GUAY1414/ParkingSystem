@@ -9,6 +9,7 @@ export type SupportedRole = "DRIVER" | "PARKING_ATTENDANT" | "PARKING_ADMINISTRA
 export default function RoleGuard({ allowedRoles, children }: { allowedRoles: SupportedRole[]; children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const roleKey = allowedRoles.join(",");
 
   useEffect(() => {
     async function authorize() {
@@ -38,7 +39,7 @@ export default function RoleGuard({ allowedRoles, children }: { allowedRoles: Su
     }
 
     authorize();
-  }, [allowedRoles, router]);
+  }, [roleKey, router]);
 
   if (!authorized) {
     return <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#66758a" }}>Verifying workspace access…</main>;
